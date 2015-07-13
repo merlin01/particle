@@ -1,0 +1,295 @@
+
+<!doctype html>
+<html lang="en">
+    <head>
+        <title>three.js webgl - interactive particles</title>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+        <style>
+            body {
+                color: #ffffff;
+                font-family:Monospace;
+                font-size:13px;
+                text-align:center;
+                font-weight: bold;
+
+                background-color: #000000;
+                margin: 0px;
+                overflow: hidden;
+            }
+            #info {
+                color: #fff;
+                position: absolute;
+                top: 0px; width: 100%;
+                padding: 5px;
+                z-index:100;
+            }
+
+        </style>
+    </head>
+
+    <body>		
+        <div id="container"></div>
+
+        <script src="lib/Three57/Three_57.js"></script>
+
+       
+        <script type="x-shader/x-vertex" id="vertexshader">
+
+            attribute float size;
+            attribute vec3 ca;
+
+            varying vec3 vColor;
+
+            void main() {
+
+            vColor = ca;
+
+            vec4 mvPosition = modelViewMatrix * vec4( position, 1.0 );
+
+           //gl_PointSize = 15.5;
+            gl_PointSize = size * ( 300.0 / length( mvPosition.xyz ) );
+
+            gl_Position = projectionMatrix * mvPosition;
+
+            }
+
+        </script>
+
+        <script type="x-shader/x-fragment" id="fragmentshader">
+
+            uniform vec3 color;
+            uniform sampler2D texture;
+
+            varying vec3 vColor;
+
+            void main() {
+
+           gl_FragColor = vec4( color * vColor, 1.0 );
+            gl_FragColor = gl_FragColor * texture2D( texture, gl_PointCoord );
+            
+            //vec4 outColor = texture2D( texture, gl_PointCoord );
+
+            //gl_FragColor = outColor * vec4( vColor, 1.0 ); 
+
+            }
+
+        </script>
+
+
+        <script>
+
+            var renderer, scene, camera, stats;
+            var cube, uniforms, attributes;
+
+            var WIDTH = window.innerWidth,
+            HEIGHT = window.innerHeight;
+            var objects = [];
+            var PARTICLE_SIZE = 20;
+
+            var projector, raycaster;
+            var mouse = { x: 0, y: 0 }, INTERSECTED;
+
+            var clock;
+
+            init();
+            animate();
+
+            function init() {
+
+            camera = new THREE.PerspectiveCamera( 45, WIDTH / HEIGHT, 1, 10000 );
+            camera.position.z = 300;
+
+            projector = new THREE.Projector();
+            raycaster = new THREE.Raycaster();
+
+            scene = new THREE.Scene();
+
+            scene.add( camera );
+
+            clock = new THREE.Clock();
+
+            attributes = {
+
+            size: { type: 'f', value: [] },
+            ca: { type: 'c', value: [] }
+
+            };
+            var sprite = generateSprite();
+            _texture = new THREE.Texture(sprite);                       
+            _texture.needsUpdate = true;
+            uniforms = {
+
+            color: { type: "c", value: new THREE.Color( 0xffffff ) },
+            texture: { type: "t", value: _texture }
+
+            };
+
+            var shaderMaterial = new THREE.ShaderMaterial( {
+
+            uniforms: uniforms,
+            attributes: attributes,
+            vertexShader: document.getElementById( 'vertexshader' ).textContent,
+            fragmentShader: document.getElementById( 'fragmentshader' ).textContent,
+            depthTest: false
+
+            });
+
+            var geometry = new THREE.CubeGeometry( 200, 200, 200, 12, 12, 12 );
+            var radius = 150;
+
+            var vc1 = geometry.vertices.length;
+            var material = new THREE.ParticleBasicMaterial({color:0xffffff,size:5});
+            cube = new THREE.ParticleSystem( geometry, shaderMaterial );
+            cube.position.set( 0, 0, 50 );
+            objects.push(cube);
+            cube.dynamic = true;
+            cube.sortParticles = true;
+
+            var vertices = cube.geometry.vertices;
+            var values_size = attributes.size.value;
+            var values_color = attributes.ca.value;
+
+            for( var v = 0; v < vertices.length; v++ ) {
+
+            values_size[ v ] = PARTICLE_SIZE * 0.5;
+            values_color[ v ] = new THREE.Color( 0xffffff );
+            values_color[ v ].setHSV( 0.01 + 0.1 * ( v / vc1 ), 0.99, ( vertices[ v ].y + radius ) / ( 2 * radius ) );
+
+            }
+
+            scene.add( cube );
+
+            renderer = new THREE.WebGLRenderer({antialias: true});
+            renderer.setSize( WIDTH, HEIGHT );
+
+            var container = document.getElementById( 'container' );
+            container.appendChild( renderer.domElement );
+
+
+
+            document.addEventListener( 'mousemove', onDocumentMouseMove, false );
+            window.addEventListener( 'resize', onWindowResize, false );
+            }
+
+            function onDocumentMouseMove( event ) {
+
+            event.preventDefault();
+
+            mouse.x = ( event.clientX / window.innerWidth ) * 2 - 1;
+            mouse.y = - ( event.clientY / window.innerHeight ) * 2 + 1;
+
+            }
+
+            function onWindowResize() {
+
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+
+            renderer.setSize( window.innerWidth, window.innerHeight );
+            render();
+
+            }
+
+            function animate() {
+
+            requestAnimationFrame( animate );
+            render();			
+
+            }
+
+            function generateSprite() {
+
+            var canvas = document.createElement('canvas');
+            canvas.width = 128;
+            canvas.height = 128;
+
+            var context = canvas.getContext('2d');
+
+
+            // Just a square, doesnt work too bad with blur pp.
+            context.fillStyle = "white";
+            context.strokeStyle = "white";
+
+
+            /* context.beginPath();
+            context.arc(64, 64, 60, 0, Math.PI * 2, false);
+            context.closePath();
+
+            context.lineWidth = 5.5; //0.05
+            context.stroke();
+            context.restore();*/
+
+
+            var gradient = context.createRadialGradient(canvas.width / 2, canvas.height / 2, 0, canvas.width / 2, canvas.height / 2, canvas.width / 2);
+
+            /*gradient.addColorStop(0, 'rgba(216,216,216,1)');
+            gradient.addColorStop(0.2, 'rgba(216,216,216,1)');
+            gradient.addColorStop(0.4, 'rgba(216,216,216,1)');*/
+            gradient.addColorStop(1, 'rgba(216,216,216,1)');
+
+            context.fillStyle = gradient;
+
+
+            context.beginPath();
+            context.arc(64, 64, 60, 0, Math.PI * 2, false);
+            context.closePath();
+            context.fill();
+
+            context.lineWidth = 0.005; //0.05
+            context.stroke();
+            context.restore();
+
+            return canvas;
+
+            }
+
+            function render() {
+           
+            var time = clock.getElapsedTime() * 0.1;
+
+            //cube.rotation.set( 0, Math.cos( time / 2 ), Math.sin( time ) );
+
+            var vector = new THREE.Vector3( mouse.x, mouse.y, 0.5 );
+            projector.unprojectVector( vector, camera );                   
+            raycaster.set( camera.position, vector.sub( camera.position ).normalize() );
+            var intersects = raycaster.intersectObjects( scene.children );
+        
+            //console.log(intersects.length);
+            if ( intersects.length > 0 ) 
+            {
+
+                if ( INTERSECTED != intersects[ 0 ].vertex ) 
+                {
+
+                    attributes.size.value[ INTERSECTED ] = PARTICLE_SIZE;
+
+                    INTERSECTED = intersects[ 0 ].vertex;
+
+                    attributes.size.value[ INTERSECTED ] = PARTICLE_SIZE * 1.25;
+                   
+                    attributes.size.needsUpdate = true;
+                    attributes.ca.needsUpdate = true;
+
+                }
+
+            } 
+            else if ( INTERSECTED !== null ) 
+            {
+
+                attributes.size.value[ INTERSECTED ] = PARTICLE_SIZE;
+                attributes.size.needsUpdate = true;
+                INTERSECTED = null;
+
+            }
+
+            renderer.render( scene, camera );
+
+            }
+
+
+        </script>
+
+    </body>
+
+</html>
