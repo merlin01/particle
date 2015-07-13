@@ -2,7 +2,7 @@
 <!doctype html>
 <html lang="en">
     <head>
-        <title>three.js webgl - interactive particles</title>
+        <title>three.js webgl - interactive particles helped </title>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
         <style>
@@ -28,12 +28,12 @@
         </style>
     </head>
 
-    <body>		
+    <body>
         <div id="container"></div>
 
         <script src="lib/Three57/Three_57.js"></script>
 
-       
+
         <script type="x-shader/x-vertex" id="vertexshader">
 
             attribute float size;
@@ -67,10 +67,10 @@
 
            gl_FragColor = vec4( color * vColor, 1.0 );
             gl_FragColor = gl_FragColor * texture2D( texture, gl_PointCoord );
-            
+
             //vec4 outColor = texture2D( texture, gl_PointCoord );
 
-            //gl_FragColor = outColor * vec4( vColor, 1.0 ); 
+            //gl_FragColor = outColor * vec4( vColor, 1.0 );
 
             }
 
@@ -116,7 +116,7 @@
 
             };
             var sprite = generateSprite();
-            _texture = new THREE.Texture(sprite);                       
+            _texture = new THREE.Texture(sprite);
             _texture.needsUpdate = true;
             uniforms = {
 
@@ -194,7 +194,7 @@
             function animate() {
 
             requestAnimationFrame( animate );
-            render();			
+            render();
 
             }
 
@@ -245,21 +245,21 @@
             }
 
             function render() {
-           
+
             var time = clock.getElapsedTime() * 0.1;
 
             //cube.rotation.set( 0, Math.cos( time / 2 ), Math.sin( time ) );
 
             var vector = new THREE.Vector3( mouse.x, mouse.y, 0.5 );
-            projector.unprojectVector( vector, camera );                   
+            projector.unprojectVector( vector, camera );
             raycaster.set( camera.position, vector.sub( camera.position ).normalize() );
             var intersects = raycaster.intersectObjects( scene.children );
-        
+
             //console.log(intersects.length);
-            if ( intersects.length > 0 ) 
+            if ( intersects.length > 0 )
             {
 
-                if ( INTERSECTED != intersects[ 0 ].vertex ) 
+                if ( INTERSECTED != intersects[ 0 ].vertex )
                 {
 
                     attributes.size.value[ INTERSECTED ] = PARTICLE_SIZE;
@@ -267,14 +267,14 @@
                     INTERSECTED = intersects[ 0 ].vertex;
 
                     attributes.size.value[ INTERSECTED ] = PARTICLE_SIZE * 1.25;
-                   
+
                     attributes.size.needsUpdate = true;
                     attributes.ca.needsUpdate = true;
 
                 }
 
-            } 
-            else if ( INTERSECTED !== null ) 
+            }
+            else if ( INTERSECTED !== null )
             {
 
                 attributes.size.value[ INTERSECTED ] = PARTICLE_SIZE;
